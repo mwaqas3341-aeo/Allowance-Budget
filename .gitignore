@@ -1,0 +1,11 @@
+# clasp auth token — never commit this
+.clasprc.json
+.clasp.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

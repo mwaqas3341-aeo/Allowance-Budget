@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEO Budget Dashboard</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Root Variables ── */
+    :root {
+      --brand:       #1d4ed8;
+      --brand-light: #3b82f6;
+      --brand-dark:  #1e3a8a;
+      --success:     #059669;
+      --danger:      #dc2626;
+      --warn:        #d97706;
+      --surface:     #ffffff;
+      --bg:          #f0f4ff;
+      --border:      #dde3f0;
+      --text:        #1e293b;
+      --muted:       #64748b;
+      --radius:      14px;
+      --shadow:      0 4px 24px rgba(29,78,216,.10);
+    }
+
+    /* ── Base ── */
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 60%, var(--brand-light) 100%);
+      color: #fff;
+      padding: 22px 20px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 18px rgba(29,78,216,.30);
+    }
+    .app-header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -.3px;
+    }
+    .app-header p {
+      font-size: .75rem;
+      opacity: .75;
+      margin: 2px 0 0;
+    }
+    .header-badge {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.30);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: .7rem;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .card-header-custom {
+      background: #f8faff;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: .85rem;
+      color: var(--brand-dark);
+    }
+    .card-header-custom i { font-size: 1rem; }
+    .card-body-custom { padding: 18px; }
+
+    /* ── Step Progress ── */
+    .step-progress {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 20px 18px 10px;
+    }
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .8rem;
+      font-weight: 700;
+      transition: all .4s ease;
+      border: 2.5px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      z-index: 2;
+      position: relative;
+    }
+    .step-circle.active {
+      border-color: var(--brand);
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 0 0 5px rgba(59,130,246,.20);
+      animation: pulse-ring 1.5s infinite;
+    }
+    .step-circle.done {
+      border-color: var(--success);
+      background: var(--success);
+      color: #fff;
+    }
+    .step-label {
+      font-size: .62rem;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      white-space: nowrap;
+    }
+    .step-label.active { color: var(--brand); }
+    .step-label.done   { color: var(--success); }
+    .step-connector {
+      height: 3px;
+      flex: 1;
+      background: var(--border);
+      margin-bottom: 22px;
+      transition: background .5s ease;
+      border-radius: 2px;
+    }
+    .step-connector.done { background: var(--success); }
+    .step-connector.active { background: linear-gradient(90deg, var(--success), var(--brand-light)); }
+
+    /* ── Animated progress bar fill ── */
+    .progress-fill-bar {
+      height: 5px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-light));
+      width: 0%;
+      transition: width .6s cubic-bezier(.4,0,.2,1);
+    }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(59,130,246,.35); }
+      70%  { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
+      100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+    }
+
+    /* ── Form Controls ── */
+    .form-label {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+    .form-select, .form-control {
+      border-radius: 9px;
+      border: 1.5px solid var(--border);
+      font-family: 'Sora', sans-serif;
+      font-size: .85rem;
+      padding: 10px 14px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-select:focus, .form-control:focus {
+      border-color: var(--brand-light);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    /* ── Period Blocks ── */
+    .period-block {
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: #f8faff;
+      animation: slideDown .3s ease;
+    }
+    .period-label {
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--brand);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Mode Selector Tabs ── */
+    .mode-tabs {
+      display: flex;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 11px 8px;
+      text-align: center;
+      cursor: pointer;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      transition: all .25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .mode-tab.selected {
+      background: var(--brand);
+      color: #fff;
+    }
+    .mode-tab:first-child { border-right: 1.5px solid var(--border); }
+
+    /* ── Buttons ── */
+    .btn-primary-custom {
+      background: linear-gradient(135deg, var(--brand), var(--brand-light));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      font-size: .85rem;
+      padding: 13px 20px;
+      width: 100%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(29,78,216,.28);
+      transition: transform .15s, box-shadow .15s, opacity .2s;
+      letter-spacing: .2px;
+    }
+    .btn-primary-custom:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(29,78,216,.35);
+    }
+    .btn-primary-custom:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary-custom:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-success-custom {
+      background: linear-gradient(135deg, var(--success), #10b981);
+      box-shadow: 0 4px 14px rgba(5,150,105,.28);
+    }
+    .btn-success-custom:hover:not(:disabled) {
+      box-shadow: 0 6px 20px rgba(5,150,105,.35);
+    }
+
+    /* ── Status Alert ── */
+    .status-alert {
+      border-radius: 10px;
+      padding: 13px 16px;
+      font-size: .83rem;
+      font-weight: 600;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      animation: fadeIn .3s ease;
+    }
+    .status-alert.info    { background: #eff6ff; color: var(--brand-dark); border: 1px solid #bfdbfe; }
+    .status-alert.success { background: #f0fdf4; color: #14532d;           border: 1px solid #bbf7d0; }
+    .status-alert.error   { background: #fef2f2; color: #7f1d1d;           border: 1px solid #fecaca; }
+    .status-alert.warn    { background: #fffbeb; color: #78350f;           border: 1px solid #fde68a; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Spinner ── */
+    .spinner-ring {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Preview Table ── */
+    .preview-section { display: none; }
+    .preview-section.visible { display: block; animation: fadeIn .35s ease; }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    table.preview-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .78rem;
+      min-width: 700px;
+    }
+    table.preview-table thead th {
+      background: var(--brand-dark);
+      color: #fff;
+      padding: 10px 12px;
+      font-size: .72rem;
+      font-weight: 600;
+      white-space: nowrap;
+      letter-spacing: .3px;
+    }
+    table.preview-table thead th:first-child  { border-radius: 10px 0 0 0; }
+    table.preview-table thead th:last-child   { border-radius: 0 10px 0 0; }
+    table.preview-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    table.preview-table tbody tr:last-child { border-bottom: none; }
+    table.preview-table tbody tr:hover { background: #f0f4ff; }
+    table.preview-table tbody tr.inactive { background: #fff5f5; }
+    table.preview-table tbody tr.inactive td { color: #9ca3af; }
+    table.preview-table td {
+      padding: 9px 12px;
+      white-space: nowrap;
+    }
+    .badge-active   { background: #dcfce7; color: #166534; border-radius: 20px; padding: 2px 10px; font-size: .68rem; font-weight: 700; }
+    .badge-inactive { background: #fee2e2; color: #991b1b; border-radius: 20px; padding: 2px 10px; font-size: .68rem; font-weight: 700; }
+    .amount-col { font-family: 'JetBrains Mono', monospace; font-size: .77rem; text-align: right; }
+    .total-col  { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--brand-dark); text-align: right; }
+
+    /* ── Summary Cards ── */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .stat-label { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; font-weight: 600; }
+
+    /* ── Month count tabs ── */
+    .count-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .count-tab {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .count-tab.selected {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(29,78,216,.3);
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 480px) {
+      .app-header h1 { font-size: 1rem; }
+      .header-badge  { display: none; }
+      .btn-primary-custom { font-size: .8rem; padding: 12px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────── -->
+<div class="app-header">
+  <div class="d-flex align-items-center justify-content-between">
+    <div>
+      <h1><i class="bi bi-cash-stack me-2"></i>AEO Budget</h1>
+      <p>Inspection Allowance · Karor Male Wing</p>
+    </div>
+    <span class="header-badge"><i class="bi bi-shield-check me-1"></i>Secure</span>
+  </div>
+</div>
+
+<div class="container-fluid px-3 mt-3" style="max-width:680px;">
+
+  <!-- ── STEP PROGRESS ─────────────────────────────────── -->
+  <div class="card">
+    <div class="card-body-custom pb-2">
+      <div class="step-progress">
+        <div class="step-item">
+          <div class="step-circle active" id="step1Circle">1</div>
+          <div class="step-label active" id="step1Label">Configure</div>
+        </div>
+        <div class="step-connector" id="conn1"></div>
+        <div class="step-item">
+          <div class="step-circle" id="step2Circle">2</div>
+          <div class="step-label" id="step2Label">Preview</div>
+        </div>
+        <div class="step-connector" id="conn2"></div>
+        <div class="step-item">
+          <div class="step-circle" id="step3Circle">3</div>
+          <div class="step-label" id="step3Label">Email</div>
+        </div>
+      </div>
+      <!-- thin animated bar -->
+      <div style="background:var(--border); border-radius:3px; height:5px; margin:0 18px 4px;">
+        <div class="progress-fill-bar" id="progressFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 1 : CONFIGURE ──────────────────────────── -->
+  <div class="card" id="configCard">
+    <div class="card-header-custom"><i class="bi bi-sliders"></i>Step 1 — Configure Budget Periods</div>
+    <div class="card-body-custom">
+
+      <!-- Month count selector -->
+      <div class="mb-3">
+        <div class="form-label">Number of Months</div>
+        <div class="count-tabs" id="countTabs">
+          <div class="count-tab selected" data-val="1" onclick="selectCount(1)">1</div>
+          <div class="count-tab" data-val="2" onclick="selectCount(2)">2</div>
+          <div class="count-tab" data-val="3" onclick="selectCount(3)">3</div>
+          <div class="count-tab" data-val="4" onclick="selectCount(4)">4</div>
+        </div>
+      </div>
+
+      <!-- Dynamic period rows -->
+      <div id="periodsContainer"></div>
+
+      <!-- Output Mode -->
+      <div class="mb-3 mt-1">
+        <div class="form-label mb-2">Output Mode</div>
+        <div class="mode-tabs">
+          <button class="mode-tab selected" id="tab-cumulative" onclick="selectMode('cumulative')">
+            <i class="bi bi-layers"></i> Cumulative PDF
+          </button>
+          <button class="mode-tab" id="tab-separate" onclick="selectMode('separate')">
+            <i class="bi bi-files"></i> Separate PDFs
+          </button>
+        </div>
+        <div class="mt-2" style="font-size:.72rem; color:var(--muted);">
+          <span id="modeDesc">One master PDF with totals across all selected periods.</span>
+        </div>
+        <input type="hidden" id="selectedMode" value="cumulative" />
+      </div>
+
+      <button class="btn-primary-custom" onclick="loadMatrix()" id="previewBtn">
+        <i class="bi bi-table"></i> Generate Preview Matrix
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STATUS ──────────────────────────────────────── -->
+  <div id="statusBox" style="display:none; margin-bottom:16px;"></div>
+
+  <!-- ── STEP 2 : PREVIEW ────────────────────────────── -->
+  <div class="preview-section" id="previewSection">
+
+    <!-- Summary stats -->
+    <div class="row g-2 mb-3" id="statsRow"></div>
+
+    <div class="card">
+      <div class="card-header-custom">
+        <i class="bi bi-table"></i>Budget Preview Matrix
+        <span class="ms-auto" style="font-size:.7rem; color:var(--muted);">Scroll to see all columns →</span>
+      </div>
+      <div class="card-body-custom pt-2">
+        <div class="table-wrapper">
+          <table class="preview-table" id="previewTable"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 action -->
+    <div class="card" id="emailCard">
+      <div class="card-header-custom"><i class="bi bi-send"></i>Step 3 — Generate PDFs & Email</div>
+      <div class="card-body-custom">
+        <div class="status-alert info mb-3">
+          <i class="bi bi-info-circle-fill mt-1"></i>
+          <div>Review the matrix above. Inactive rows will be excluded from the PDF. Click below to generate and dispatch.</div>
+        </div>
+        <button class="btn-primary-custom btn-success-custom" onclick="processBudget()" id="emailBtn">
+          <i class="bi bi-envelope-arrow-up"></i> Prepare, Email &amp; Cleanup
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Constants ────────────────────────────────────────────────
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const YEARS  = ["2025","2026","2027","2028","2029","2030"];
+let   selectedCount = 1;
+
+// ── Init ─────────────────────────────────────────────────────
+window.onload = () => { buildPeriods(); };
+
+// ── Count tabs ───────────────────────────────────────────────
+function selectCount(n) {
+  selectedCount = n;
+  document.querySelectorAll('.count-tab').forEach(t => {
+    t.classList.toggle('selected', parseInt(t.dataset.val) === n);
+  });
+  buildPeriods();
+}
+
+// ── Build period rows ─────────────────────────────────────────
+function buildPeriods() {
+  const container = document.getElementById('periodsContainer');
+  container.innerHTML = '';
+  const now = new Date();
+
+  for (let i = 0; i < selectedCount; i++) {
+    const targetDate = new Date(now.getFullYear(), now.getMonth() - (selectedCount - 1 - i), 1);
+    const defMonth   = MONTHS[targetDate.getMonth()];
+    const defYear    = targetDate.getFullYear().toString();
+
+    let monthOpts = MONTHS.map(m => `<option value="${m}" ${m === defMonth ? 'selected' : ''}>${m}</option>`).join('');
+    let yearOpts  = YEARS.map(y  => `<option value="${y}" ${y === defYear  ? 'selected' : ''}>${y}</option>`).join('');
+
+    const block = document.createElement('div');
+    block.className = 'period-block';
+    block.innerHTML = `
+      <div class="period-label"><i class="bi bi-calendar3"></i>Period ${i + 1}</div>
+      <div class="row g-2">
+        <div class="col-7">
+          <label class="form-label">Month</label>
+          <select class="form-select" id="month_${i}">${monthOpts}</select>
+        </div>
+        <div class="col-5">
+          <label class="form-label">Year</label>
+          <select class="form-select" id="year_${i}">${yearOpts}</select>
+        </div>
+      </div>`;
+    container.appendChild(block);
+  }
+}
+
+// ── Mode selector ─────────────────────────────────────────────
+function selectMode(mode) {
+  document.getElementById('selectedMode').value = mode;
+  document.getElementById('tab-cumulative').classList.toggle('selected', mode === 'cumulative');
+  document.getElementById('tab-separate').classList.toggle('selected', mode === 'separate');
+  document.getElementById('modeDesc').textContent = mode === 'cumulative'
+    ? 'One master PDF with totals across all selected periods.'
+    : 'A separate PDF file for each selected period.';
+}
+
+// ── Get periods ───────────────────────────────────────────────
+function getPeriods() {
+  return Array.from({ length: selectedCount }, (_, i) => ({
+    year:  document.getElementById('year_'  + i).value,
+    month: document.getElementById('month_' + i).value
+  }));
+}
+
+// ── Step state manager ────────────────────────────────────────
+function setStep(step) {
+  const total = 3;
+  [1, 2, 3].forEach(s => {
+    const circle = document.getElementById('step' + s + 'Circle');
+    const label  = document.getElementById('step' + s + 'Label');
+    if (s < step)       { circle.className = 'step-circle done';   circle.innerHTML = '<i class="bi bi-check-lg"></i>'; label.className = 'step-label done'; }
+    else if (s === step){ circle.className = 'step-circle active';  circle.innerHTML = s;                               label.className = 'step-label active'; }
+    else                { circle.className = 'step-circle';         circle.innerHTML = s;                               label.className = 'step-label'; }
+  });
+  [1, 2].forEach(c => {
+    const conn = document.getElementById('conn' + c);
+    conn.className = 'step-connector' + (c + 1 <= step ? ' done' : (c + 1 === step ? ' active' : ''));
+  });
+  const pct = Math.round(((step - 1) / (total - 1)) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+// ── Show status ───────────────────────────────────────────────
+function showStatus(msg, type = 'info', icon = 'info-circle-fill') {
+  const box = document.getElementById('statusBox');
+  box.style.display = 'block';
+  box.innerHTML = `<div class="status-alert ${type}"><i class="bi bi-${icon} mt-1"></i><div>${msg}</div></div>`;
+}
+
+// ── Set button loading ────────────────────────────────────────
+function setLoading(btnId, loading, text, icon) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? `<span class="spinner-ring"></span> ${text}`
+    : `<i class="bi bi-${icon}"></i> ${text}`;
+}
+
+// ── Load preview matrix ───────────────────────────────────────
+function loadMatrix() {
+  const periods = getPeriods();
+  setStep(2);
+  setLoading('previewBtn', true, 'Loading Data…', 'table');
+  showStatus('Reading Google Sheets & calculating deductions…', 'info', 'arrow-repeat');
+
+  google.script.run
+    .withSuccessHandler(renderMatrix)
+    .withFailureHandler(err => {
+      setLoading('previewBtn', false, 'Generate Preview Matrix', 'table');
+      showStatus('Error: ' + err.message, 'error', 'exclamation-triangle-fill');
+      setStep(1);
+    })
+    .getPreviewMatrix(periods);
+}
+
+// ── Render matrix ─────────────────────────────────────────────
+function renderMatrix(data) {
+  setLoading('previewBtn', false, 'Refresh Preview', 'arrow-clockwise');
+  showStatus('Matrix loaded. Review below, then proceed to email.', 'success', 'check-circle-fill');
+
+  // Stats
+  const active   = data.rows.filter(r => r.status === 'Active').length;
+  const inactive = data.rows.length - active;
+  const grandTot = data.rows.filter(r => r.status === 'Active').reduce((s, r) => s + r.total, 0);
+  document.getElementById('statsRow').innerHTML = `
+    <div class="col-4"><div class="stat-card"><div class="stat-value" style="color:var(--success)">${active}</div><div class="stat-label">Active AEOs</div></div></div>
+    <div class="col-4"><div class="stat-card"><div class="stat-value" style="color:var(--danger)">${inactive}</div><div class="stat-label">Excluded</div></div></div>
+    <div class="col-4"><div class="stat-card"><div class="stat-value">${(grandTot/1000).toFixed(0)}K</div><div class="stat-label">Grand Total</div></div></div>
+  `;
+
+  // Table
+  let html = '<thead><tr><th>Sr.</th><th>Per No.</th><th>Name</th><th>Markaz</th><th>Tehsil</th><th>DDO</th>';
+  data.periods.forEach(p => { html += `<th>${p.month.slice(0,3)} ${p.year}</th>`; });
+  html += '<th>Total</th><th>Status</th></tr></thead><tbody>';
+
+  data.rows.forEach(r => {
+    const active = r.status === 'Active';
+    html += `<tr class="${active ? '' : 'inactive'}">`;
+    html += `<td>${r.srNo}</td><td>${r.perNo}</td><td>${r.name}</td><td>${r.markaz}</td><td>${r.tehsil}</td><td>${r.ddo}</td>`;
+    if (active) {
+      data.periods.forEach(p => {
+        const key = p.year + '-' + p.month;
+        html += `<td class="amount-col">${(r.amounts[key] || 0).toLocaleString()}</td>`;
+      });
+      html += `<td class="total-col">${r.total.toLocaleString()}</td>`;
+      html += `<td><span class="badge-active">Include</span></td>`;
+    } else {
+      html += `<td colspan="${data.periods.length + 1}" style="text-align:center; color:#9ca3af">—</td>`;
+      html += `<td><span class="badge-inactive">Exclude</span></td>`;
+    }
+    html += '</tr>';
+  });
+
+  document.getElementById('previewTable').innerHTML = html + '</tbody>';
+  document.getElementById('previewSection').classList.add('visible');
+  document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Process & email ───────────────────────────────────────────
+function processBudget() {
+  const periods = getPeriods();
+  const mode    = document.getElementById('selectedMode').value;
+
+  setStep(3);
+  setLoading('emailBtn', true, 'Processing… Do not close.', 'envelope-arrow-up');
+  showStatus('Generating PDFs, dispatching emails, and cleaning up temporary files…', 'warn', 'gear-fill');
+
+  google.script.run
+    .withSuccessHandler(result => {
+      setLoading('emailBtn', false, 'Done!', 'check-circle');
+      if (result.success) {
+        showStatus(`✅ Success! Emailed to <strong>${result.recipients}</strong> recipients. Temporary files deleted.`, 'success', 'check-circle-fill');
+        document.getElementById('emailCard').style.display = 'none';
+      } else {
+        showStatus('Error: ' + result.message, 'error', 'exclamation-triangle-fill');
+        setLoading('emailBtn', false, 'Retry Email', 'envelope-arrow-up');
+        setStep(2);
+      }
+    })
+    .withFailureHandler(err => {
+      setLoading('emailBtn', false, 'Retry Email', 'envelope-arrow-up');
+      showStatus('Error: ' + err.message, 'error', 'exclamation-triangle-fill');
+      setStep(2);
+    })
+    .processAndEmailBudget(mode, periods);
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
