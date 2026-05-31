@@ -221,25 +221,35 @@
     .stat-lbl   { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; font-weight: 600; }
 
     /* ── TABLE ── */
-    .tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
-    table.mtbl { border-collapse: collapse; width: 100%; font-size: .76rem; min-width: 680px; }
+    .tbl-wrap { border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+    table.mtbl { border-collapse: collapse; width: 100%; font-size: .7rem; table-layout: fixed; }
     table.mtbl thead th {
       background: var(--brand-dark); color: #fff;
-      padding: 10px 11px; font-size: .7rem; font-weight: 600;
-      white-space: nowrap; letter-spacing: .3px;
+      padding: 8px 6px; font-size: .65rem; font-weight: 600;
+      word-break: break-word; letter-spacing: .2px; text-align: center;
     }
     table.mtbl thead th:first-child  { border-radius: 10px 0 0 0; }
     table.mtbl thead th:last-child   { border-radius: 0 10px 0 0; }
+    /* column widths: Sr | PerNo | Name | Markaz | Tehsil | DDO | amounts... | Status */
+    table.mtbl col.c-sr     { width: 4%; }
+    table.mtbl col.c-per    { width: 9%; }
+    table.mtbl col.c-name   { width: 16%; }
+    table.mtbl col.c-markaz { width: 11%; }
+    table.mtbl col.c-tehsil { width: 9%; }
+    table.mtbl col.c-ddo    { width: 8%; }
+    table.mtbl col.c-amt    { width: 9%; }
+    table.mtbl col.c-tot    { width: 10%; }
+    table.mtbl col.c-status { width: 9%; }
     table.mtbl tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
     table.mtbl tbody tr:last-child { border-bottom: none; }
     table.mtbl tbody tr:hover { background: #eef2ff; }
     table.mtbl tbody tr.inact { background: #fff5f5; }
     table.mtbl tbody tr.inact td { color: #9ca3af; }
-    table.mtbl td { padding: 9px 11px; white-space: nowrap; }
-    .amt  { font-family: 'JetBrains Mono', monospace; font-size: .74rem; text-align: right; }
+    table.mtbl td { padding: 7px 5px; word-break: break-word; text-align: center; vertical-align: middle; }
+    .amt  { font-family: 'JetBrains Mono', monospace; font-size: .68rem; text-align: right; }
     .tot  { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--brand-dark); text-align: right; }
-    .badge-a { background: #dcfce7; color: #166534; border-radius: 20px; padding: 2px 9px; font-size: .65rem; font-weight: 700; }
-    .badge-i { background: #fee2e2; color: #991b1b; border-radius: 20px; padding: 2px 9px; font-size: .65rem; font-weight: 700; }
+    .badge-a { background: #dcfce7; color: #166534; border-radius: 20px; padding: 2px 6px; font-size: .6rem; font-weight: 700; display: inline-block; }
+    .badge-i { background: #fee2e2; color: #991b1b; border-radius: 20px; padding: 2px 6px; font-size: .6rem; font-weight: 700; display: inline-block; }
 
     .hidden  { display: none !important; }
     .visible { display: block; animation: fadeUp .35s ease; }
@@ -394,10 +404,7 @@ let selCount     = 1;
 window.onload = function() {
   GAS_URL = localStorage.getItem(STORAGE_KEY) || '';
   if (GAS_URL) {
-    document.getElementById('apiUrlInput').value = GAS_URL;
-    document.getElementById('apiUrlInput').classList.add('saved');
-    document.getElementById('urlStatus').textContent = '✅ URL loaded from storage.';
-    document.getElementById('configNotice').style.borderColor = '#10b981';
+    document.getElementById('configNotice').style.display = 'none';
   }
   buildPeriods();
 };
@@ -411,9 +418,11 @@ function saveApiUrl() {
   }
   GAS_URL = val;
   localStorage.setItem(STORAGE_KEY, GAS_URL);
-  document.getElementById('apiUrlInput').classList.add('saved');
-  document.getElementById('urlStatus').innerHTML = '<span style="color:#059669">✅ Saved! Ready to use.</span>';
-  document.getElementById('configNotice').style.borderColor = '#10b981';
+  document.getElementById('urlStatus').innerHTML = '<span style="color:#059669">✅ Saved!</span>';
+  const notice = document.getElementById('configNotice');
+  notice.style.transition = 'opacity .5s ease';
+  notice.style.opacity = '0';
+  setTimeout(() => notice.style.display = 'none', 500);
 }
 
 // ── Count tabs ────────────────────────────────────────────────
@@ -535,8 +544,10 @@ function renderMatrix(data) {
     <div class="col-4"><div class="stat-card"><div class="stat-val" style="color:var(--danger)">${inactive}</div><div class="stat-lbl">Excluded</div></div></div>
     <div class="col-4"><div class="stat-card"><div class="stat-val">${(grandTot/1000).toFixed(1)}K</div><div class="stat-lbl">Grand Total</div></div></div>`;
 
-  let html = '<thead><tr><th>Sr.</th><th>Per No.</th><th>Name</th><th>Markaz</th><th>Tehsil</th><th>DDO</th>';
-  data.periods.forEach(p => html += `<th>${p.month.slice(0,3)} ${p.year}</th>`);
+  let amtCols = data.periods.map(() => '<col class="c-amt">').join('');
+  let html = `<colgroup><col class="c-sr"><col class="c-per"><col class="c-name"><col class="c-markaz"><col class="c-tehsil"><col class="c-ddo">${amtCols}<col class="c-tot"><col class="c-status"></colgroup>`;
+  html += '<thead><tr><th>Sr.</th><th>Per No.</th><th>Name</th><th>Markaz</th><th>Tehsil</th><th>DDO</th>';
+  data.periods.forEach(p => html += `<th>${p.month.slice(0,3)}<br>${p.year}</th>`);
   html += '<th>Total</th><th>Status</th></tr></thead><tbody>';
 
   data.rows.forEach(r => {
